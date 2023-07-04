@@ -1,2 +1,2 @@
 # APC-Reports-Templates
-LaTex template for APC reports for IIT Mandi.
+LaTex template for APC reports of IIT Mandi.
