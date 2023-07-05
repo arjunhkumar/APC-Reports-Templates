@@ -142,13 +142,12 @@ Using program analysis-
 \section{Introduction}
 In modern object-oriented programming languages, object identity
 enables fundamental features such as field mutation and synchronization.
-
 However, it also affects the performance and memory footprint of an application significantly. 
 Each distinct field access requires a memory load of the corresponding object followed by an 
 indirection to access the field object, which is an additional overhead.
 Moreover, every object is heap-allocated, and each heap allocated object has headers of one or 
 more words. An application may involve several 
-thousand objects in which contain such a predefined header. On the contrary, if an object is 
+thousand objects which contain such a predefined header. On the contrary, if an object is 
 identity-less then it requires a smaller header region and can contribute to reducing the 
 memory footprint of the application.  Several compiler
 analyses and optimizations such as escape analysis and field scalarization can eliminate 
@@ -157,8 +156,8 @@ such optimizations are usually limited in their scope and applicability.
 
 
 	Languages like Java allow for optimizing the access cost for
-objects of certain “primitive” types; however, OO programs often
-contain additional user-defined types whose objects do not depend
+objects of certain “primitive” types; however, object oriented programs often
+consist of user-defined types whose objects do not depend
 on an identity that is separate from their value. An important
 development in this space has been the Project Valhalla \citep{PV}, which
 aims to improve the performance profile of conventional objects in
@@ -190,32 +189,47 @@ Machine (JVM) is object inlining or flattening \citep{ObjectInlining}.
 \subsection{Object Flattening}
 Flattening an object modifies the reference to a field inside a class object 
 such that the object pointed to by the field is encoded directly inside the 
-object of the class containing the same (the ``container'' object). 
-A flattened object avoids overheads from object headers, memory indirections, 
-as well as heap allocation, and exhibits improved cache locality. 
+object of the class containing the same. This creates a compact memory representation
+for the class object containing the field.  
+A flattened field inside an object avoids overheads from object headers, 
+memory indirections, as well as heap allocation, and exhibits improved cache locality.
+The object which contains the encoded
+field object is termed as the ``container'' object. 
 
-	Figure \ref{fig:Figure 1} illustrates this idea. 
+Figure \ref{fig:Figure 1} illustrates this idea. 
 Here, on the right-hand side, two {\em Point} objects, pointed to by 
 the fields {\em start} and {\em end}, are inlined into a container object 
 of type \textit{Line}.
-As a result, accesses to the objects pointed to by \textit{start} and \textit{end} 
-can be done directly from the container object of type \textit{Line}. Moreover, 
-the allocation costs and memory for two objects are saved. 
+As a result, accesses to the objects pointed to by {\em start} and {\em end} 
+can be done directly from the container object of type {\em Line}. Moreover, 
+the allocation costs and memory occupied for two {\em Point} objects  are saved along
+with a more coherent memory representation for {\em Line} object.
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\vskip 0.2cm
 	\centering
 	\includegraphics[scale=0.2]{Images/Flattening_Line.jpg}
-	\label{fig:Figure 1}
 	\caption{Flattening of objects}
+	\label{fig:Figure 1}
 \end{figure}
+The flattening optimization needs to be perfomed carefully considering all the effects it can cause. 
+For instance, flattening a very large field object or flattening too many objects into a 
+container may lead to bloating. Bloating can impact the cache memory adversely and may 
+lead to potential loss of benefits gained by flattening. Another scenario is the case of object 
+comparison in which a container object may suffer degardation in performance resulting 
+from a high number of comparisons similar to the native {\em String} type. Factors as such may be
+determined by analyzing the source code statically in some cases, and in others may require 
+information used during the execution of the program. Experimenting with programs that involve 
+value-type objects and flattening optimization 
+can help to discover more impactful factors and access patterns to be considered for this 
+optimization. 
 
-Our proposed work is a combination of static + dynamic analyses;
-an idea from the PYE framework \citep{PYE2019} in order to selectively decide
-potential candidates for object flattening in the JVM for value type objects. Currently, in
-JVMs a fixed parameter based flattening criterion is used. Therefore, we wish to study access patterns 
-and suggesta more efficient and flexible flattening strategy along with expanding the optimizations
-possible in JVM in the scope of value types.
+Currently, in JVMs a fixed parameter based criterion is used to decide flattening of objects.
+Our reseach targets a combination of static + dynamic analyses; an idea from the PYE framework \citep{PYE2019} in 
+order to selectively decide potential candidates for object flattening in the JVM.
+ We also intend to expand the optimizations 
+possible in JVM in the scope of 
+value types. 
 
 \clearpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 2 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -257,13 +271,13 @@ optimized by flattening itself into their container.
 The instance size is computed dynamically considering all fields of an object 
 and its predefined header size. This parameter is provided as input during runtime. 
 By default the OpenJ9 VM 
-considers this value to be 0 unless defined explicitely.
-The workflow for the parameter based strategy is described in Figure \ref{fig:Figure 1}.
+considers this value to be {0} unless defined explicitely.
+The workflow for the parameter based strategy is described in Figure \ref{fig:Figure 2}.
 
 \begin{figure}[h]
 	\vskip 0.2cm
 	\centering
-	\includegraphics[scale=0.5]{Images/Class_Init.jpg}
+	\includegraphics[scale=0.27]{Images/Class_Init.jpg}
 	\caption{Flattening of objects}
 	\label{fig:Figure 2}
 \end{figure}
@@ -305,20 +319,39 @@ each instance of the class to track which fields are should be flattened.
 {\raggedleft{}\HRule}
 
 \subsection{Identification of value-type classes in programs}
+Value-types and flattening though already present in languages like {\em C\#} is a novel concept 
+introduced for Java and is expected to be released as part of 
+JDK-21. Inorder to experiment with such a cutting-edge feature 
+codebases/ benchmarks needed to be explicitely created. 
 As per the JEP specification \citep{JEPP} 
-detailing the Flattened Heap Layouts for Value Objects, there exists a set of restrictions that allow limited classes
-to be flattened into their respective container class objects. In order to estimate the number
-of such eligible flattenable classes, a tool named ValFinder was 
+detailing the Flattened Heap Layouts for Value Objects,  
+there exists a clear set of restrictions abiding which a class
+can be flattened into their respective container class object.
+A tool that can analyze existing codebases to find such classes which abide
+by the neccessary restrictions would help to
+create an developemental space for experimenting value-type objects and flattening.
+ Motivated by this problem; a tool ``ValFinder'' was 
 developed.
+	
+	
 
 ValFinder uses the Soot framework \citep{soot} to perform static analysis
 of Java Bytecode, and identifies classes that can be marked as value
 and primitive. It then uses JavaParser \citep{JP} to transform Java source
-code accordingly. ValFinder consists of two modules as described in the Figure \ref{fig:Figure 2}:
+code accordingly. ValFinder consists of two modules as described in the Figure \ref{fig:Figure 3}:
 \begin{enumerate}
 	\item Analysis module
 	\item Transformation module
 \end{enumerate}
+
+
+\begin{figure}[h]
+	\vskip 0.2cm
+	\centering
+	\includegraphics[scale=0.25]{Images/ValFinder.jpg}
+	\caption{Overview of ValFinder}
+	\label{fig:Figure 3}
+\end{figure}
 
 
 ValFinder starts by taking in the class files of a program that is to be analyzed as input and initiates performing an interprocedural
@@ -327,23 +360,7 @@ classes and the value-type satisfiability restrictions are evaluated. The output
 module is a set of value and primitive classes identified from the input set. This set of identified classes are fed to 
 the transformation module along with source code of the corresponding class files which were fed 
 as input during the analysis phase. In the transformation module we use a modified JavaParser which supports 
-the semantics of value types classes. Through the modified JavaParser we modify the source code of the classes identified 
-during the analysis phase and make neccessary changes such that these classes adhere to the syntactic specifications of value/primitive
-classes. The output of this phase is hence the refactored source code which can potentially be benefitted through 
-object flattening. This completes a pipeline for automatic source to source conversion of eligible non-value type classes 
-to value-type classes. ValFinder was further enhanced with various other auxilliary analysis to hihghlight the impact of restrictions to
-cause non-compliance in classes.
-
-ValFinder was helpful in identifying a set of classes for further exploring the
-impact of value-type classes and the related optimizations involved.   
-
-\begin{figure}[h]
-	\vskip 0.2cm
-	\centering
-	\includegraphics[scale=0.45]{Images/ValFinder.jpg}
-	\caption{Overview of ValFinder}
-	\label{fig:Figure 3}
-\end{figure}
+the semantics of value types classes. 
 
 \clearpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 4 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -362,35 +379,49 @@ impact of value-type classes and the related optimizations involved.
 \noindent
 
 {\raggedleft{}\HRule}
+
+\noindent Using the modified JavaParser we repair the source code of the classes identified 
+during the analysis phase. 
+This is achieved by iterating over the AST generated for the source code and subsequently modifying the node information. 
+These changes are neccessary so that the identified classes adhere to the syntactic specifications of 
+value/primitive classes.
+The output of this phase is hence the refactored source code which can potentially be benefitted through 
+object flattening. This completes a pipeline for automatic source to source conversion of eligible non-value type classes 
+to value-type classes.
+ValFinder was further enhanced with various other auxilliary analysis to highlight the impact of restrictions that
+cause non-compliance among classes.
+
 \subsection{Granularity shift}
-As per the JEP \citep{JEPP} specification and current implementation in JVMs the instance size of a value object once computed does not
+As per the JEP \citep{JEPP} specification and current implementation in JVMs the instance size of a value-type object does not
 change; hence when a value-class is loaded for the first time a flag is used to mark the class as flattenable or not. 
-Every instance field of a flattenable marked value class type will get flattened irrespective of the container class type or field.
+Every instance field of a flattenable marked value-class type will get flattened irrespective of other factors.
 This level of granularity provides us with less control for flattening. There are instances of a value-type field which we
 would prefer to inline and vice versa. To enable the same we modified the current implementation of Eclipse OpenJ9 VM to support field
 level granularity over class level granularity. 
 
 	For enabling field level granularity; we need to pass information to the VM about which fields to be considered for
-flattening. This information is provided as input to the Eclipse OpenJ9 VM in the form of `.out' file. This file contains 
-information such as field signature and corresponding container class signature. 
+flattening. This information is provided as input to the Eclipse OpenJ9 VM in the form of {\em .out} file. This file contains a list 
+field metadata (field signature and corresponding container class signature); this information is sufficient to uniquely 
+identify fields inside the VM.
 
-	For controlling the granularity level in VM
-two new VM arguments has been introduced (-XX:+UseStaticResults and -XX:-UseStaticResults). -XX:+UseStaticResults flag 
-instructs the VM to use field level granularity and only consider the fields mentioned in the input .res file for flattening.
--XX:-UseStaticResults flag reverts the granularity to class level where all eligible fields are inlined.
+	For controlling the granularity level in VM two new VM arguments has been introduced 
+(-XX:+UseStaticResults and -XX:-UseStaticResults). -XX:+UseStaticResults flag 
+instructs the VM to use field level granularity and only consider the fields mentioned in the input {\em .out} file for flattening.
+-XX:-UseStaticResults flag reverts the granularity to class level where all eligible fields are flattened.
 
 	During the VM initialization phase the VM thread checks the granularity level based on the input parameters provided.
 If field level granularity is specified then we read the '.out' file and store the corresponding field information in a 
-global VM datastructure. During the class initialization phase as described in section 2.1 we match the class signature of the
+global VM datastructure. During the class initialization phase as described in section 3.1 we match the class signature of the
 acting container class and iterate it's fields to match the field signature from the global datastructure.
 Once the field has been identified as a potential flattening candidate we proceed with the threshold condition check and 
-class cache initialization similar to native implementation described in section 2.1.
+class cache initialization similar to native implementation described in section 3.1.
 
-	Along with a finer granularity level the modifications to the Eclipse OpenJ9 VM alligns with our 
-approach of using a static +  dynamic scheme to selectively flatten objects. By tuning the input .out 
+	Along with a finer granularity level the modifications to the Eclipse OpenJ9 VM aligns with our 
+approach of using a static +  dynamic scheme to selectively flatten objects. By tuning the input {\em .out} 
 file provided to the VM we can decide which fields are to be considered for flattening and vice versa.
 % The next level of granularity to be considered for is object level.
-This helps us to statically analyze code by considering impactful factors for flattening.  
+This mechanism helps us to statically analyze code and pass insightful results to the JVM ecosystem where
+ flattening decision is ultimately made. 
 
 
 \clearpage
