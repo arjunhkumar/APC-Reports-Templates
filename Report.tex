@@ -134,24 +134,24 @@ Using program analysis-
 \begin{enumerate}
 \item Identify various access patterns under which value-type objects should be flattened in their respective containers.
 \item Build an appropriate flattening strategy for such objects in Eclipse OpenJ9 VM.
-\item Improve Java applications by using static + JIT analysis based on the developed flattening strategy.
-\item Explore prospective optimizations that can be enabled in JVM due to the introduction of value types.
+\item Improve Java applications by using a static + JIT analysis technique based on the developed flattening strategy.
+\item Explore prospective optimizations that can be enabled in JVM due to the introduction of identity-less objects.
 
 \end{enumerate} 
 
 \section{Introduction}
 In modern object-oriented programming languages, object identity
 enables fundamental features such as field mutation and synchronization.
-However, it also affects the performance and memory footprint of an application significantly. 
+However it also affects the performance and memory footprint of an application significantly. 
 Each distinct field access requires a memory load of the corresponding object followed by an 
-indirection to access the field object, which is an additional overhead.
-Moreover, every object is heap-allocated, and each heap allocated object has headers of one or 
+indirection to access the field object which is an additional overhead.
+Moreover every object is heap-allocated, and each heap allocated object has headers of one or 
 more words. An application may involve several 
 thousand objects which contain such a predefined header. On the contrary, if an object is 
-identity-less then it requires a smaller header region and can contribute to reducing the 
+identity-less then the predefined header is no longer required and can contribute to reducing the 
 memory footprint of the application.  Several compiler
 analyses and optimizations such as escape analysis and field scalarization can eliminate 
-these costs for even the objects that maintain identity; however,
+these costs for the objects that maintain identity; however,
 such optimizations are usually limited in their scope and applicability.
 
 
@@ -190,7 +190,7 @@ Machine (JVM) is object inlining or flattening \citep{ObjectInlining}.
 Flattening an object modifies the reference to a field inside a class object 
 such that the object pointed to by the field is encoded directly inside the 
 object of the class containing the same. This creates a compact memory representation
-for the class object containing the field.  
+for the object containing the field.  
 A flattened field inside an object avoids overheads from object headers, 
 memory indirections, as well as heap allocation, and exhibits improved cache locality.
 The object which contains the encoded
@@ -217,19 +217,18 @@ For instance, flattening a very large field object or flattening too many object
 container may lead to bloating. Bloating can impact the cache memory adversely and may 
 lead to potential loss of benefits gained by flattening. Another scenario is the case of object 
 comparison in which a container object may suffer degardation in performance resulting 
-from a high number of comparisons similar to the native {\em String} type. Factors as such may be
-determined by analyzing the source code statically in some cases, and in others may require 
+from a high number of comparisons similar to the comparison operation performed by the native {\em String} class. 
+Such impactful factors may be determined by analyzing the source code statically in some cases, and in others may require 
 information used during the execution of the program. Experimenting with programs that involve 
 value-type objects and flattening optimization 
-can help to discover more impactful factors and access patterns to be considered for this 
+can help to discover more such impactful factors and access patterns to be considered for this 
 optimization. 
 
 Currently, in JVMs a fixed parameter based criterion is used to decide flattening of objects.
 Our reseach targets a combination of static + dynamic analyses; an idea from the PYE framework \citep{PYE2019} in 
-order to selectively decide potential candidates for object flattening in the JVM.
+order to selectively decide potential candidates for object flattening in the Eclipise OpenJ9 VM.
  We also intend to expand the optimizations 
-possible in JVM in the scope of 
-value types. 
+possible in this VM in the context of value types. 
 
 \clearpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 2 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -252,24 +251,28 @@ value types.
 \section{Work Done and Target Set for Last Year}
 
 \subsection{Study on implementation of object inlining inside the OpenJ9 VM}
-It may neither be possible to inline all the objects of value types (e.g. atomicity checks for 
+\label{subsec:Subsection1}
+It may neither be possible to inline all the objects of value types (due to atomicity checks for 
 nullness) nor may it be beneficial to do so.
 Similar to the function inlining optimization; inlining all potential candidates 
 may lead to incoherently sized objects.
 Imprudent increase in size of objects may cause negetive impacts on memory efficiency of the 
 corresponding application and may result 
 in loss of all potential benefits obtained from object flattening. 
-The current implementation in Eclipse OpenJ9 \citep{OpenJ9} first filters value types by 
-putting additional restrictions to identify primitive types, and then uses a parameter based strategy to 
-limit the object size and decide if a field can be inlined into it's corresponding container object. 
+
+
+	Inorder to prevent the same, the current implementation in Eclipse OpenJ9 \citep{OpenJ9} first filters value-type classes
+	 by 
+putting additional restrictions to identify primitive value-type classes, and then uses a parameter based strategy to 
+limit the object size and decide if a field can be inlined into its corresponding container object. 
 For this a JVM parameter (-XX:ValueTypeFlatteningThreshold) has been introduced as the limiting
 factor. 
 The parameter  specifies the maximum size (in bytes) of a 
 flattenable object. 
 Primitive value-type objects \citep{JEPP} that exceed this threshold size do not get 
-optimized by flattening itself into their container. 
+optimized by flattening itself into their container instances. 
 The instance size is computed dynamically considering all fields of an object 
-and its predefined header size. This parameter is provided as input during runtime. 
+and its predefined header size. The JVM parameter (-XX:ValueTypeFlatteningThreshold) is provided as input during runtime. 
 By default the OpenJ9 VM 
 considers this value to be {0} unless defined explicitely.
 The workflow for the parameter based strategy is described in Figure \ref{fig:Figure 2}.
@@ -284,21 +287,23 @@ The workflow for the parameter based strategy is described in Figure \ref{fig:Fi
 
 
 
-Bytecode `\textit{new}' resulting from the initialization of an object will trigger the loading 
+The bytecode `\textit{new}' resulting from the initialization of an object will trigger the loading 
 of a class unless already done. 
 During the initialization of a class all the flattenable field value classes of the 
 corresponding class are also loaded. This is done by analyzing the type-class descriptor.
 Flattenable value classes have a unique type-class descriptor which is specifically prefixed 
 with the character `\textit{Q}'. 
-Once the flattenable field class has been loaded a threshold check is done.
+Once the flattenable field class has been loaded a threshold check is done. The threshold 
+condition is described in equation \ref{eq:equation1}.
 \begin{equation}
-	Instance Size \leq VM Flattening Threshold
+	\label{eq:equation1}
+	Instance Size \leq VM->Flattening Threshold
 \end{equation} 
 
-After the class loading of the value class is completed. The flattened field
+After the class loading of the value-type class is completed, the flattened field
 cache for the corresponding container class is made an entry which describes the shape and modifiers 
 of the flattened field. This field cache is used while instantiating
-each instance of the class to track which fields are should be flattened. 
+each instance of the class to track which fields are flattened. 
 \clearpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 3 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -411,12 +416,12 @@ instructs the VM to use field level granularity and only consider the fields men
 
 	During the VM initialization phase the VM thread checks the granularity level based on the input parameters provided.
 If field level granularity is specified then we read the '.out' file and store the corresponding field information in a 
-global VM datastructure. During the class initialization phase as described in section 3.1 we match the class signature of the
+global VM datastructure. During the class initialization phase as described in section \ref{subsec:Subsection1}; we match the class signature of the
 acting container class and iterate it's fields to match the field signature from the global datastructure.
 Once the field has been identified as a potential flattening candidate we proceed with the threshold condition check and 
-class cache initialization similar to native implementation described in section 3.1.
+class cache initialization similar to native implementation described in section \ref{subsec:Subsection1}.
 
-	Along with a finer granularity level the modifications to the Eclipse OpenJ9 VM aligns with our 
+	Along with a finer granularity level; the modifications to the Eclipse OpenJ9 VM aligns with our 
 approach of using a static +  dynamic scheme to selectively flatten objects. By tuning the input {\em .out} 
 file provided to the VM we can decide which fields are to be considered for flattening and vice versa.
 % The next level of granularity to be considered for is object level.
