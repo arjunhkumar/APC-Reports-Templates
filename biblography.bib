@@ -164,3 +164,29 @@ keywords = {virtual machine, escape analysis, java, speculative optimization, in
 location = {Orlando, FL, USA},
 series = {CGO '14}
 }
+
+
+ @misc{JP,
+  author = {JavaParser Development Team},
+  year   = {2021},
+  title  = {{Javaparser}},
+  url    = {https://javaparser.org/},
+}
+
+@inproceedings{ObjectInlining,
+author = {Lhot\'{a}k, Ondrej and Hendren, Laurie},
+title = {Run-Time Evaluation of Opportunities for Object Inlining in Java},
+year = {2002},
+isbn = {1581135998},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/583810.583830},
+doi = {10.1145/583810.583830},
+abstract = {Object-oriented languages, such as Java, encourage the use of many small objects linked together by field references, instead of a few monolithic structures. While this practice is beneficial from a program design perspective, it can slow down program execution by incurring many pointer indirections. One solution to this problem is object inlining: when the compiler can safely do so, it fuses small objects together, thus removing the reads/writes to the removed field, saving the memory needed to store the field and object header, and reducing the number of object allocations.The objective of this paper is to measure the potential for object inlining by studying the run-time behaviour of a comprehensive set of Java programs. We study the traces of program executions in order to determine which fields behave like inlinable fields. Since we are using dynamic information instead of a static analysis, our results give an upper bound on what could be achieved via a static compiler-based approach. Our experimental results measure the potential improvements attainable with object inlining, including reductions in the numbers of field reads and writes, and reduced memory usage.Our study shows that some Java programs can benefit significantly from object inlining, with close to a 10\% speedup. Somewhat to our surprise, our study found one case, the <tt>db</tt> benchmark, where the most important inlinable field was the result of unusual program design, and fixing this small flaw led to both better performance and clearer program design. However, the opportunities for object inlining are highly dependent on the individual program being considered, and are in many cases very limited. Furthermore, fields that are inlinable also have properties that make them potential candidates for other optimizations such as removing redundant memory accesses. The memory savings possible through object inlining are moderate.},
+booktitle = {Proceedings of the 2002 Joint ACM-ISCOPE Conference on Java Grande},
+pages = {175–184},
+numpages = {10},
+keywords = {object inlining, compilers, optimization, Java},
+location = {Seattle, Washington, USA},
+series = {JGI '02}
+}

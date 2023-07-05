@@ -68,17 +68,52 @@
 \oddsidemargin = -10 mm
 \evensidemargin = -10 mm
 
+
+\usepackage{listings}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.52}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{1.00,1.00,1.00}
+
+\lstdefinestyle{code}{language=Java,
+  backgroundcolor=\color{backcolour},
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\ttfamily\footnotesize},
+  numbers=left,
+  numberstyle=\scriptsize\color{black},
+  keywordstyle=\ttfamily\color{mauve},
+  numbersep=5pt,
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=false,
+  tabsize=2,
+  xleftmargin=1.0cm,
+%  frame=bottomline,
+  framexleftmargin=1.5em,
+  framesep=2pt,
+  escapechar=|,
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \setlist[description]{font=\itshape}
 \begin{document}
     \pagestyle{empty}
 \vskip 0.2cm
-    \begin{tabular}{l c}
-        \multirow{0}{*}
-        {\includegraphics[scale=0.50]{logo.jpg}}                              &
-        \large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
-          \\ & \large\bf{MANDI-175075 (H.P.), INDIA} \\ & \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}
-    \end{tabular}
- \vskip 0.7cm
+	\begin{tabular}{p{4cm}p{11.5cm}}
+		 \multirow{4}{*}{\includegraphics[scale=0.25]{Images/Logo.jpg}} \\
+		& \centering \large\bf\phantom{Empty line}\\ 
+		\rule{0pt}{1pt} \centering \large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
+		\rule{0pt}{1pt} \centering \large\bf{HIMACHAL PRADESH, INDIA - 175075} \\
+		\rule{0pt}{1pt} \centering \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}\\
+	\end{tabular}
+\noindent
 
 {\raggedleft{}\HRule}
  
@@ -104,92 +139,286 @@ Using program analysis-
 
 \end{enumerate} 
 
-
-
 \section{Introduction}
-
 In modern object-oriented programming languages, object identity
-enables fundamental features such as field mutation and synchronization. However, it also significantly affects the performance. In
-particular, each distinct field access requires a memory load of the
-corresponding object followed by an indirection. Several compiler
-analyses and optimizations such as escape analysis and field scalar-
-ization can eliminate these costs in specific scenarios; however,
-such optimizations are usually limited in their scope and applica-
-bility. Languages like Java allow for optimizing the access cost for
+enables fundamental features such as field mutation and synchronization.
+
+However, it also affects the performance and memory footprint of an application significantly. 
+Each distinct field access requires a memory load of the corresponding object followed by an 
+indirection to access the field object, which is an additional overhead.
+Moreover, every object is heap-allocated, and each heap allocated object has headers of one or 
+more words. An application may involve several 
+thousand objects in which contain such a predefined header. On the contrary, if an object is 
+identity-less then it requires a smaller header region and can contribute to reducing the 
+memory footprint of the application.  Several compiler
+analyses and optimizations such as escape analysis and field scalarization can eliminate 
+these costs for even the objects that maintain identity; however,
+such optimizations are usually limited in their scope and applicability.
+
+
+	Languages like Java allow for optimizing the access cost for
 objects of certain “primitive” types; however, OO programs often
 contain additional user-defined types whose objects do not depend
-on an identity that is separate from their “value”. An important
-development in this space has been the Project Valhalla [2], which
+on an identity that is separate from their value. An important
+development in this space has been the Project Valhalla \citep{PV}, which
 aims to improve the performance profile of conventional objects in
 Java, and make it comparable to the performance of primitive types.
-Valhalla introduces the notion of value types [4], which essentially
-empowers objects to be identity-less. In order to facilitate an im-
-proved performance for such objects, an important optimization
+Valhalla introduces the notion of value-types \citep{JEPD}, which essentially
+empowers objects to be identity-less. In order to facilitate an improved 
+performance for such objects, an important optimization
 that can be performed by a value-types supporting Java Virtual
-Machine (JVM) is object inlining [1] or flattening.
+Machine (JVM) is object inlining or flattening \citep{ObjectInlining}.
+
 \clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 1 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 2 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \setlist[description]{font=\itshape}
 \pagestyle{empty}
 \vskip 0.2cm
-\begin{tabular}{l c}
-	\multirow{0}{*}
-	{\includegraphics[scale=0.50]{logo.jpg}}                              &
-	\large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
-	\\ & \large\bf{MANDI-175075 (H.P.), INDIA} \\ & \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}
-\end{tabular}
-\vskip 0.7cm
+	\begin{tabular}{p{4cm}p{11.5cm}}
+		 \multirow{4}{*}{\includegraphics[scale=0.25]{Images/Logo.jpg}} \\
+		& \centering \large\bf\phantom{Empty line}\\ 
+		\rule{0pt}{1pt} \centering \large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
+		\rule{0pt}{1pt} \centering \large\bf{HIMACHAL PRADESH, INDIA - 175075} \\
+		\rule{0pt}{1pt} \centering \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}\\
+	\end{tabular}
+\noindent
+
+{\raggedleft{}\HRule}
+
+\subsection{Object Flattening}
+Flattening an object modifies the reference to a field inside a class object 
+such that the object pointed to by the field is encoded directly inside the 
+object of the class containing the same (the ``container'' object). 
+A flattened object avoids overheads from object headers, memory indirections, 
+as well as heap allocation, and exhibits improved cache locality. 
+
+	Figure \ref{fig:Figure 1} illustrates this idea. 
+Here, on the right-hand side, two {\em Point} objects, pointed to by 
+the fields {\em start} and {\em end}, are inlined into a container object 
+of type \textit{Line}.
+As a result, accesses to the objects pointed to by \textit{start} and \textit{end} 
+can be done directly from the container object of type \textit{Line}. Moreover, 
+the allocation costs and memory for two objects are saved. 
+
+\begin{figure}[h]
+	\vskip 0.2cm
+	\centering
+	\includegraphics[scale=0.2]{Images/Flattening_Line.jpg}
+	\label{fig:Figure 1}
+	\caption{Flattening of objects}
+\end{figure}
+
+Our proposed work is a combination of static + dynamic analyses;
+an idea from the PYE framework \citep{PYE2019} in order to selectively decide
+potential candidates for object flattening in the JVM for value type objects. Currently, in
+JVMs a fixed parameter based flattening criterion is used. Therefore, we wish to study access patterns 
+and suggesta more efficient and flexible flattening strategy along with expanding the optimizations
+possible in JVM in the scope of value types.
+
+\clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 2 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setlist[description]{font=\itshape}
+\pagestyle{empty}
+\vskip 0.2cm
+	\begin{tabular}{p{4cm}p{11.5cm}}
+		 \multirow{4}{*}{\includegraphics[scale=0.25]{Images/Logo.jpg}} \\
+		& \centering \large\bf\phantom{Empty line}\\ 
+		\rule{0pt}{1pt} \centering \large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
+		\rule{0pt}{1pt} \centering \large\bf{HIMACHAL PRADESH, INDIA - 175075} \\
+		\rule{0pt}{1pt} \centering \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}\\
+	\end{tabular}
+\noindent
+
 {\raggedleft{}\HRule}
 
 \section{Work Done and Target Set for Last Year}
 
-\subsection{Identification of value-type classes}
+\subsection{Study on implementation of object inlining inside the OpenJ9 VM}
+It may neither be possible to inline all the objects of value types (e.g. atomicity checks for 
+nullness) nor may it be beneficial to do so.
+Similar to the function inlining optimization; inlining all potential candidates 
+may lead to incoherently sized objects.
+Imprudent increase in size of objects may cause negetive impacts on memory efficiency of the 
+corresponding application and may result 
+in loss of all potential benefits obtained from object flattening. 
+The current implementation in Eclipse OpenJ9 \citep{OpenJ9} first filters value types by 
+putting additional restrictions to identify primitive types, and then uses a parameter based strategy to 
+limit the object size and decide if a field can be inlined into it's corresponding container object. 
+For this a JVM parameter (-XX:ValueTypeFlatteningThreshold) has been introduced as the limiting
+factor. 
+The parameter  specifies the maximum size (in bytes) of a 
+flattenable object. 
+Primitive value-type objects \citep{JEPP} that exceed this threshold size do not get 
+optimized by flattening itself into their container. 
+The instance size is computed dynamically considering all fields of an object 
+and its predefined header size. This parameter is provided as input during runtime. 
+By default the OpenJ9 VM 
+considers this value to be 0 unless defined explicitely.
+The workflow for the parameter based strategy is described in Figure \ref{fig:Figure 1}.
 
-\subsection{Implementation in OpenJ9}
-
-
-
-\clearpage
-\setlist[description]{font=\itshape}
-\pagestyle{empty}
-\vskip 0.2cm
-\begin{tabular}{l c}
-	\multirow{0}{*}
-	{\includegraphics[scale=0.50]{logo.jpg}}                              &
-	\large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
-	\\ & \large\bf{MANDI-175075 (H.P.), INDIA} \\ & \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}
-\end{tabular}
-\vskip 0.7cm
-{\raggedleft{}\HRule}
-\subsection{Changing granularity from class level to field level}
-
-\subsection{Cache distance analysis}
 \begin{figure}[h]
-% \caption{Example of object inlining}
-\vskip 0.2cm
-\centering
-% \includegraphics[scale=0.48]{Flattening_Line}
-% \label{fig:Figure 1}
+	\vskip 0.2cm
+	\centering
+	\includegraphics[scale=0.5]{Images/Class_Init.jpg}
+	\caption{Flattening of objects}
+	\label{fig:Figure 2}
 \end{figure}
 
 
 
+Bytecode `\textit{new}' resulting from the initialization of an object will trigger the loading 
+of a class unless already done. 
+During the initialization of a class all the flattenable field value classes of the 
+corresponding class are also loaded. This is done by analyzing the type-class descriptor.
+Flattenable value classes have a unique type-class descriptor which is specifically prefixed 
+with the character `\textit{Q}'. 
+Once the flattenable field class has been loaded a threshold check is done.
+\begin{equation}
+	Instance Size \leq VM Flattening Threshold
+\end{equation} 
 
+After the class loading of the value class is completed. The flattened field
+cache for the corresponding container class is made an entry which describes the shape and modifiers 
+of the flattened field. This field cache is used while instantiating
+each instance of the class to track which fields are should be flattened. 
 \clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 3 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 4 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \setlist[description]{font=\itshape}
 \pagestyle{empty}
 \vskip 0.2cm
-\begin{tabular}{l c}
-	\multirow{0}{*}
-	{\includegraphics[scale=0.50]{logo.jpg}}                              &
-	\large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
-	\\ & \large\bf{MANDI-175075 (H.P.), INDIA} \\ & \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}
-\end{tabular}
-\vskip 0.7cm
+	\begin{tabular}{p{4cm}p{11.5cm}}
+		 \multirow{4}{*}{\includegraphics[scale=0.25]{Images/Logo.jpg}} \\
+		& \centering \large\bf\phantom{Empty line}\\ 
+		\rule{0pt}{1pt} \centering \large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
+		\rule{0pt}{1pt} \centering \large\bf{HIMACHAL PRADESH, INDIA - 175075} \\
+		\rule{0pt}{1pt} \centering \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}\\
+	\end{tabular}
+\noindent
+
+{\raggedleft{}\HRule}
+
+\subsection{Identification of value-type classes in programs}
+As per the JEP specification \citep{JEPP} 
+detailing the Flattened Heap Layouts for Value Objects, there exists a set of restrictions that allow limited classes
+to be flattened into their respective container class objects. In order to estimate the number
+of such eligible flattenable classes, a tool named ValFinder was 
+developed.
+
+ValFinder uses the Soot framework \citep{soot} to perform static analysis
+of Java Bytecode, and identifies classes that can be marked as value
+and primitive. It then uses JavaParser \citep{JP} to transform Java source
+code accordingly. ValFinder consists of two modules as described in the Figure \ref{fig:Figure 2}:
+\begin{enumerate}
+	\item Analysis module
+	\item Transformation module
+\end{enumerate}
+
+
+ValFinder starts by taking in the class files of a program that is to be analyzed as input and initiates performing an interprocedural
+analysis from the analysis module.  In this module the dependencies between various
+classes and the value-type satisfiability restrictions are evaluated. The output of this 
+module is a set of value and primitive classes identified from the input set. This set of identified classes are fed to 
+the transformation module along with source code of the corresponding class files which were fed 
+as input during the analysis phase. In the transformation module we use a modified JavaParser which supports 
+the semantics of value types classes. Through the modified JavaParser we modify the source code of the classes identified 
+during the analysis phase and make neccessary changes such that these classes adhere to the syntactic specifications of value/primitive
+classes. The output of this phase is hence the refactored source code which can potentially be benefitted through 
+object flattening. This completes a pipeline for automatic source to source conversion of eligible non-value type classes 
+to value-type classes. ValFinder was further enhanced with various other auxilliary analysis to hihghlight the impact of restrictions to
+cause non-compliance in classes.
+
+ValFinder was helpful in identifying a set of classes for further exploring the
+impact of value-type classes and the related optimizations involved.   
+
+\begin{figure}[h]
+	\vskip 0.2cm
+	\centering
+	\includegraphics[scale=0.45]{Images/ValFinder.jpg}
+	\caption{Overview of ValFinder}
+	\label{fig:Figure 3}
+\end{figure}
+
+\clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 4 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 5 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\setlist[description]{font=\itshape}
+\pagestyle{empty}
+\vskip 0.2cm
+	\begin{tabular}{p{4cm}p{11.5cm}}
+		 \multirow{4}{*}{\includegraphics[scale=0.25]{Images/Logo.jpg}} \\
+		& \centering \large\bf\phantom{Empty line}\\ 
+		\rule{0pt}{1pt} \centering \large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
+		\rule{0pt}{1pt} \centering \large\bf{HIMACHAL PRADESH, INDIA - 175075} \\
+		\rule{0pt}{1pt} \centering \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}\\
+	\end{tabular}
+\noindent
+
+{\raggedleft{}\HRule}
+\subsection{Granularity shift}
+As per the JEP \citep{JEPP} specification and current implementation in JVMs the instance size of a value object once computed does not
+change; hence when a value-class is loaded for the first time a flag is used to mark the class as flattenable or not. 
+Every instance field of a flattenable marked value class type will get flattened irrespective of the container class type or field.
+This level of granularity provides us with less control for flattening. There are instances of a value-type field which we
+would prefer to inline and vice versa. To enable the same we modified the current implementation of Eclipse OpenJ9 VM to support field
+level granularity over class level granularity. 
+
+	For enabling field level granularity; we need to pass information to the VM about which fields to be considered for
+flattening. This information is provided as input to the Eclipse OpenJ9 VM in the form of `.out' file. This file contains 
+information such as field signature and corresponding container class signature. 
+
+	For controlling the granularity level in VM
+two new VM arguments has been introduced (-XX:+UseStaticResults and -XX:-UseStaticResults). -XX:+UseStaticResults flag 
+instructs the VM to use field level granularity and only consider the fields mentioned in the input .res file for flattening.
+-XX:-UseStaticResults flag reverts the granularity to class level where all eligible fields are inlined.
+
+	During the VM initialization phase the VM thread checks the granularity level based on the input parameters provided.
+If field level granularity is specified then we read the '.out' file and store the corresponding field information in a 
+global VM datastructure. During the class initialization phase as described in section 2.1 we match the class signature of the
+acting container class and iterate it's fields to match the field signature from the global datastructure.
+Once the field has been identified as a potential flattening candidate we proceed with the threshold condition check and 
+class cache initialization similar to native implementation described in section 2.1.
+
+	Along with a finer granularity level the modifications to the Eclipse OpenJ9 VM alligns with our 
+approach of using a static +  dynamic scheme to selectively flatten objects. By tuning the input .out 
+file provided to the VM we can decide which fields are to be considered for flattening and vice versa.
+% The next level of granularity to be considered for is object level.
+This helps us to statically analyze code by considering impactful factors for flattening.  
+
+
+\clearpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 5 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 6 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\setlist[description]{font=\itshape}
+\pagestyle{empty}
+\vskip 0.2cm
+	\begin{tabular}{p{4cm}p{11.5cm}}
+		 \multirow{4}{*}{\includegraphics[scale=0.25]{Images/Logo.jpg}} \\
+		& \centering \large\bf\phantom{Empty line}\\ 
+		\rule{0pt}{1pt} \centering \large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
+		\rule{0pt}{1pt} \centering \large\bf{HIMACHAL PRADESH, INDIA - 175075} \\
+		\rule{0pt}{1pt} \centering \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}\\
+	\end{tabular}
+\noindent
+
 {\raggedleft{}\HRule}
 \section{Planned Work for the Next Year}   
  \begin{enumerate}
 \item Implementing a static + dynamic analysis to compute the number of distinct
 		cache loads possible between two inlined field loads.
+
+\item Completing an end to end pipeline retrofitting all the analyses together.
 
 \item Evaluating the strategy over a set of standard benchmarks for JVM.
 
@@ -223,16 +452,23 @@ Goa University, India, June 2nd-3rd, 2023
 
 
 \clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 6 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 7 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \setlist[description]{font=\itshape}
 \pagestyle{empty}
 \vskip 0.2cm
-\begin{tabular}{l c}
-	\multirow{0}{*}
-	{\includegraphics[scale=0.50]{logo.jpg}}                              &
-	\large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
-	\\ & \large\bf{MANDI-175075 (H.P.), INDIA} \\ & \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}
-\end{tabular}
-\vskip 0.7cm
+	\begin{tabular}{p{4cm}p{11.5cm}}
+		 \multirow{4}{*}{\includegraphics[scale=0.25]{Images/Logo.jpg}} \\
+		& \centering \large\bf\phantom{Empty line}\\ 
+		\rule{0pt}{1pt} \centering \large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
+		\rule{0pt}{1pt} \centering \large\bf{HIMACHAL PRADESH, INDIA - 175075} \\
+		\rule{0pt}{1pt} \centering \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}\\
+	\end{tabular}
+\noindent
+
 {\raggedleft{}\HRule}
 
 
@@ -240,19 +476,26 @@ Goa University, India, June 2nd-3rd, 2023
 \bibliography{biblography}
      
 \clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 6 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 7 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \setlist[description]{font=\itshape}
 
 	\pagestyle{empty}
 	\vskip 0.2cm
-	\begin{tabular}{l c}
-		\multirow{0}{*}
-		{\includegraphics[scale=0.50]{logo.jpg}}                              &
-		\large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
-		\\ & \large\bf{MANDI-175075 (H.P.), INDIA} \\ & \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}
+	\begin{tabular}{p{4cm}p{11.5cm}}
+		 \multirow{4}{*}{\includegraphics[scale=0.25]{Images/Logo.jpg}} \\
+		& \centering \large\bf\phantom{Empty line}\\ 
+		\rule{0pt}{1pt} \centering \large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
+		\rule{0pt}{1pt} \centering \large\bf{HIMACHAL PRADESH, INDIA - 175075} \\
+		\rule{0pt}{1pt} \centering \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}\\
 	\end{tabular}
-	\vskip 0.7cm
-	
-	{\raggedleft{}\HRule}
+\noindent
+
+{\raggedleft{}\HRule}
 	\begin{center}
 	\large\bf{\underline{REPORT BY APC/DC COMMITTEE}} 
 	\end{center}
@@ -290,16 +533,28 @@ Goa University, India, June 2nd-3rd, 2023
 
 \end{enumerate}
 \clearpage
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 7 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 8 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
 \setlist[description]{font=\itshape}
 \pagestyle{empty}
 \vskip 0.2cm
-\begin{tabular}{l c}
-	\multirow{0}{*}
-	{\includegraphics[scale=0.50]{logo.jpg}}                              &
-	\large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
-	\\ & \large\bf{MANDI-175075 (H.P.), INDIA} \\ & \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}
-\end{tabular}
-\vskip 0.7cm
+	\begin{tabular}{p{4cm}p{11.5cm}}
+		 \multirow{4}{*}{\includegraphics[scale=0.25]{Images/Logo.jpg}} \\
+		& \centering \large\bf\phantom{Empty line}\\ 
+		\rule{0pt}{1pt} \centering \large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
+		\rule{0pt}{1pt} \centering \large\bf{HIMACHAL PRADESH, INDIA - 175075} \\
+		\rule{0pt}{1pt} \centering \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}\\
+	\end{tabular}
+\noindent
+
 {\raggedleft{}\HRule}
 \textbf{Recommendation of APC/DC} \textit{(Tick Appropriately)}
 \begin{enumerate}
@@ -315,9 +570,8 @@ after Two Year of Registration).
 
 \item \textbf{OVERALL PERFORMANCE: Very Good/Good/Satisfactory/Unsatisfactory}
 \item \textbf{Any Other Recommendation/Comments} \textit{(Attach separate sheet).}
-Same as the above observation.
 \end{enumerate}
-\vspace*{1cm}
+\vspace*{0.5cm}
 
 \noindent \textbf{COMMITTEE MEMBERS}\\\\
 \indent
@@ -343,20 +597,25 @@ Date: \hspace{11.3cm}  Date:\\
 	\item M.S. Scholar shall, after Registration, submit annually a written report to Academic Progress Committee.
 	\item Attach additional sheets if required.
 \end{enumerate}
-
-
-
 \clearpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 8 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 9 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \setlist[description]{font=\itshape}
 \pagestyle{empty}
 \vskip 0.2cm
-\begin{tabular}{l c}
-	\multirow{0}{*}
-	{\includegraphics[scale=0.50]{logo.jpg}}                              &
-	\large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
-	\\ & \large\bf{MANDI-175075 (H.P.), INDIA} \\ & \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}
-\end{tabular}
-\vskip 0.7cm
+	\begin{tabular}{p{4cm}p{11.5cm}}
+		 \multirow{4}{*}{\includegraphics[scale=0.25]{Images/Logo.jpg}} \\
+		& \centering \large\bf\phantom{Empty line}\\ 
+		\rule{0pt}{1pt} \centering \large\bf{INDIAN INSTITUTE OF TECHNOLOGY MANDI} \\
+		\rule{0pt}{1pt} \centering \large\bf{HIMACHAL PRADESH, INDIA - 175075} \\
+		\rule{0pt}{1pt} \centering \underline{\href{www.iitmandi.ac.in}{www.iitmandi.ac.in}}\\
+	\end{tabular}
+\noindent
+
 {\raggedleft{}\HRule}
 
 \begin{center}
@@ -366,12 +625,12 @@ Date: \hspace{11.3cm}  Date:\\
 
 \noindent  \textbf{Scholar's Name:} {ARJUN H KUMAR} \hfill \textbf{Roll No:} {S21008} \\
 \noindent \textbf{School:} {SCEE} \hfill \textbf{Date of APC/DC meeting: }{X July 2022}
-\vskip 0.5cm
+\vskip 0.2cm
 \noindent \begin{tabular}{|p{4.2cm}|p{5cm}|p{7cm}|}
-\hline\rule{0pt}{5pt} \bf  & \centering \textbf{Performance} \centering \newline(Poor, Average, Good, Very good, Exceptional)  & \hspace{2.5cm}\bf Suggestions  \\[5pt] 
-\hline\rule{0pt}{5pt} \begin{center} \bf Oral Communication and Presentation \end{center} &   &   \\[5pt]
-\hline\rule{0pt}{5pt} \begin{center} \bf Subject Knowledge \end{center} &   &   \\[5pt]
-\hline\rule{0pt}{5pt} \begin{center} \bf Research Output \end{center} &   &   \\[5pt]
+\hline\rule{0pt}{7pt} \bf  & \centering \textbf{Performance} \centering \newline(Poor, Average, Good, Very good, Exceptional)  & \hspace{2.5cm}\bf Suggestions  \\[5pt] 
+\hline\rule{0pt}{1pt} \begin{center} \bf Oral Communication and Presentation \end{center} &   &   \\[5pt]
+\hline\rule{0pt}{1pt} \begin{center} \bf Subject Knowledge \end{center} &   &   \\[5pt]
+\hline\rule{0pt}{1pt} \begin{center} \bf Research Output \end{center} &   &   \\[5pt]
 \hline \multicolumn{3}{|c|}{{\multirow{1.5}{*}{ \textbf{OVERALL PERFORMANCE \textit{(as per Part-A): Very Good/Good/Satisfactory/Unsatisfactory:}}} 
 } } \\
 \multicolumn{3}{|c|}{}                  \\
@@ -384,8 +643,8 @@ Date: \hspace{11.3cm}  Date:\\
 \multicolumn{3}{|c|}{}                  \\
 \hline 
 \end{tabular} 
-\vskip 0.7cm
-\noindent\textbf{APC/Doctoral Committee}
+\vskip 0.4cm
+\noindent \underline{\textbf{APC/Doctoral Committee}}
 \vskip 0.3cm
 
 \noindent\begin{tabular}{|p{4.5cm}|p{6cm}|p{4cm}|}
@@ -411,8 +670,12 @@ Date: \hspace{11.3cm}  Date:\\
 %\hline
 %\end{tabular}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\vskip 0.7cm
-\noindent{I have read and noted the above for compliance:}
+\vskip 0.5cm
+\noindent{I have read and noted the above for compliance.}
 \vskip 0.2cm
 \noindent\textbf{Signature of the scholar with Date:}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAGE 9 END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 \end{document}
